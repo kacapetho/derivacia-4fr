@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Definícia derivácie v bode (Sečnica → Dotyčnica) / Nombre dérivé : sécante → tangente</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --border-soft: #e2e8f0;
+      --fg: #0f172a;
+      --muted: #475569;
+      --primary: #0284c7;
+      --primary-fg: #ffffff;
+      --hover: #e2e8f0;
+    }
+    html.dark {
+      --bg: #0b1120;
+      --card: #111827;
+      --surface: #1e293b;
+      --border: #334155;
+      --border-soft: #1e293b;
+      --fg: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-fg: #0f172a;
+      --hover: #334155;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 14px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+    .header { padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+    .title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .badge-class { padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); }
+    .subtitle { margin: 2px 0 0 0; font-size: 12px; color: var(--muted); }
+    .header-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .segmented { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border-radius: 9px; background: var(--surface); border: 1px solid var(--border); }
+    button { font-family: inherit; cursor: pointer; border: none; background: transparent; color: var(--fg); transition: background-color 0.15s, color 0.15s, opacity 0.15s; }
+    .seg-btn { padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .seg-btn:hover { background: var(--hover); color: var(--fg); }
+    .seg-btn.active { background: var(--primary); color: var(--primary-fg); }
+    .steps-bar { padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .steps-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+    .step-btn { padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px; }
+    .step-btn:hover { background: var(--hover); }
+    .step-btn.active { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
+    @media (min-width: 1024px) { .main-grid { grid-template-columns: 8fr 4fr; } }
+    .left-col, .sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .canvas-card { overflow: hidden; }
+    .canvas-topbar { padding: 8px 12px; border-bottom: 1px solid var(--border-soft); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+    .topbar-left, .topbar-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 12px; }
+    .drag-hint { color: var(--muted); font-size: 12px; }
+    .btn-small { padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 600; }
+    .btn-small:hover { background: var(--hover); }
+    .canvas-wrap { position: relative; width: 100%; height: 420px; }
+    @media (min-width: 640px) { .canvas-wrap { height: 480px; } }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+    .controls-box { padding: 12px; border-top: 1px solid var(--border-soft); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+    .btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .btn-primary { padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--primary); color: var(--primary-fg); display: inline-flex; align-items: center; gap: 4px; }
+    .btn-primary:hover { opacity: 0.92; }
+    .btn-secondary { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--card); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px; }
+    .btn-secondary:hover { background: var(--hover); }
+    .h-btn { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; background: var(--card); border: 1px solid var(--border); }
+    .h-btn:hover { background: var(--hover); }
+    .h-btn.zero { background: var(--hover); font-weight: 700; }
+    .sliders-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .sliders-grid { grid-template-columns: 1fr 1fr; } }
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-lbl { font-size: 13px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+    input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+    .panel { padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+    .panel-title { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); font-family: inherit; font-size: 12px; font-weight: 600; }
+    .custom-params { padding: 9px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+    .custom-params.hidden { display: none; }
+    .param-row { display: flex; align-items: center; gap: 8px; }
+    .param-lbl { width: 64px; font-weight: 600; }
+    .formula-stack { display: flex; flex-direction: column; gap: 6px; }
+    .tex-display-row { display: flex; align-items: center; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-soft); border-left: 3px solid #0284c7; overflow-x: auto; }
+    .tex-display-row.deriv-row { border-left-color: #e11d48; }
+    .toggle-list { display: flex; flex-direction: column; gap: 4px; }
+    .toggle-item { display: flex; align-items: flex-start; gap: 9px; padding: 6px 8px; border-radius: 8px; font-size: 12px; cursor: pointer; user-select: none; }
+    .toggle-item:hover { background: var(--surface); }
+    .toggle-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--primary); cursor: pointer; }
+    .swatch { width: 10px; height: 10px; border-radius: 999px; margin-top: 4px; flex-shrink: 0; }
+    .readout-box { padding: 8px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-soft); font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .readout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .readout-lbl { color: var(--muted); font-size: 12px; }
+    .readout-val { font-size: 14px; font-weight: 600; overflow-x: auto; padding: 2px 0; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+    th { color: var(--muted); border-bottom: 1px solid var(--border); }
+
+    /* Authentic TeX / LaTeX Mathematical Typesetting */
+    .tex { font-family: "KaTeX_Main", "Latin Modern Math", "STIX Two Math", "Cambria Math", "Times New Roman", Georgia, serif; font-size: 1.06em; line-height: 1.25; letter-spacing: 0.01em; white-space: nowrap; display: inline-flex; align-items: center; }
+    .tex-wrap { white-space: normal; flex-wrap: wrap; row-gap: 0.25em; }
+    .tex-var { font-style: italic; }
+    .tex-op { font-style: normal; margin: 0 0.14em; }
+    .tex-upright, .tex-text { font-style: normal; }
+    .tex-prime { font-style: normal; margin-left: 0.04em; }
+    .tex-bin, .tex-rel { font-style: normal; margin: 0 0.22em; }
+    .tex-unary { font-style: normal; margin-right: 0.04em; }
+    .tex-thin { display: inline-block; width: 0.16em; }
+    .tex-med { display: inline-block; width: 0.28em; }
+    .tex-frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 0.18em; line-height: 1.08; }
+    .tex-frac > .num { border-bottom: 1.25px solid currentColor; padding: 0 0.26em 0.1em; font-size: 0.86em; }
+    .tex-frac > .den { padding: 0.1em 0.26em 0; font-size: 0.86em; }
+    .tex-sup { font-size: 0.72em; line-height: 0; position: relative; top: -0.45em; margin-left: 0.04em; }
+    .tex-sub { font-size: 0.72em; line-height: 0; position: relative; bottom: -0.28em; margin-left: 0.03em; }
+    .tex-supsub { display: inline-flex; flex-direction: column; vertical-align: middle; line-height: 0.9; font-size: 0.72em; margin-left: 0.04em; }
+    .tex-lim { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.0; margin-right: 0.22em; }
+    .tex-lim > .lim-op { font-style: normal; }
+    .tex-lim > .lim-sub { font-size: 0.72em; margin-top: 0.08em; }
+    .tex-sqrt { display: inline-flex; align-items: stretch; vertical-align: middle; margin: 0 0.1em; }
+    .tex-sqrt > .rad { font-style: normal; margin-right: 0.04em; }
+    .tex-sqrt > .radicand { border-top: 1.2px solid currentColor; padding: 0.08em 0.18em 0 0.14em; }
+    .tex-lr { display: inline-flex; align-items: center; }
+    .tex-delim { font-style: normal; font-weight: 400; }
+    .tex-delim-tall { font-size: 1.38em; line-height: 0.9; font-weight: 300; transform: scaleY(1.16); display: inline-block; margin: 0 0.03em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="card header">
+      <div>
+        <div class="title-row">
+          <h1 id="ui-title"></h1>
+          <span class="badge-class">4.FR</span>
+        </div>
+        <p id="ui-subtitle" class="subtitle"></p>
+      </div>
+      <div class="header-controls">
+        <div class="segmented" role="group" aria-label="Notation">
+          <button type="button" data-not="h" class="seg-btn not-btn"></button>
+          <button type="button" data-not="x" class="seg-btn not-btn"></button>
+        </div>
+        <div class="segmented" role="group" aria-label="Language">
+          <button type="button" data-lang="sk" class="seg-btn lang-btn">SK</button>
+          <button type="button" data-lang="fr" class="seg-btn lang-btn">FR</button>
+          <button type="button" data-lang="bi" class="seg-btn lang-btn">SK + FR</button>
+        </div>
+        <button type="button" id="btn-theme" class="btn-small" title="Theme">🌙</button>
+      </div>
+    </header>
+
+    <section class="card steps-bar">
+      <span id="ui-steps-label" class="steps-label"></span>
+      <button type="button" data-step="1" class="step-btn"></button>
+      <button type="button" data-step="2" class="step-btn"></button>
+      <button type="button" data-step="3" class="step-btn"></button>
+      <button type="button" data-step="4" class="step-btn"></button>
+    </section>
+
+    <div class="main-grid">
+      <div class="left-col">
+        <div class="card canvas-card">
+          <div class="canvas-topbar">
+            <div class="topbar-left">
+              <span id="status-badge" class="status-badge"></span>
+              <span id="ui-drag-hint" class="drag-hint"></span>
+            </div>
+            <div class="topbar-right">
+              <div class="segmented">
+                <button type="button" data-drag="M" class="seg-btn drag-mode-btn"></button>
+                <button type="button" data-drag="A" class="seg-btn drag-mode-btn"></button>
+              </div>
+              <button type="button" id="btn-zoom-in" class="btn-small">+</button>
+              <button type="button" id="btn-zoom-out" class="btn-small">−</button>
+              <button type="button" id="btn-zoom-reset" class="btn-small">1:1</button>
+            </div>
+          </div>
+
+          <div id="canvas-wrap" class="canvas-wrap">
+            <canvas id="scene"></canvas>
+          </div>
+
+          <div class="controls-box">
+            <div class="btn-row">
+              <button type="button" id="btn-approach" class="btn-primary"></button>
+              <button type="button" id="btn-clear-fan" class="btn-secondary"></button>
+              <button type="button" id="btn-record-row" class="btn-secondary"></button>
+              <button type="button" id="btn-fill-series" class="btn-secondary"></button>
+            </div>
+
+            <div>
+              <div id="lbl-h-presets" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;"></div>
+              <div class="btn-row">
+                <button type="button" data-h="-2" class="h-btn">−2</button>
+                <button type="button" data-h="-1" class="h-btn">−1</button>
+                <button type="button" data-h="-0.5" class="h-btn">−0.5</button>
+                <button type="button" data-h="-0.1" class="h-btn">−0.1</button>
+                <button type="button" data-h="-0.01" class="h-btn">−0.01</button>
+                <button type="button" data-h="-0.001" class="h-btn">−0.001</button>
+                <button type="button" data-h="0" class="h-btn zero">h = 0</button>
+                <button type="button" data-h="0.001" class="h-btn">+0.001</button>
+                <button type="button" data-h="0.01" class="h-btn">+0.01</button>
+                <button type="button" data-h="0.1" class="h-btn">+0.1</button>
+                <button type="button" data-h="0.5" class="h-btn">+0.5</button>
+                <button type="button" data-h="1" class="h-btn">+1</button>
+                <button type="button" data-h="2" class="h-btn">+2</button>
+              </div>
+            </div>
+
+            <div class="sliders-grid">
+              <div class="slider-row">
+                <label for="slider-x0" class="slider-lbl"><span id="lbl-slider-x0"></span><span id="val-slider-x0"></span></label>
+                <input id="slider-x0" type="range" min="-3" max="3" step="0.05" value="1.0" />
+              </div>
+              <div class="slider-row">
+                <label for="slider-h" class="slider-lbl"><span id="lbl-slider-h"></span><span id="val-slider-h"></span></label>
+                <input id="slider-h" type="range" min="-2.5" max="2.5" step="0.01" value="1.5" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <div class="panel-header">
+            <h2 id="ui-table-title" class="panel-title"></h2>
+            <button type="button" id="btn-clear-table" class="btn-small"></button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th id="th-h"></th>
+                  <th id="th-x"></th>
+                  <th id="th-fx"></th>
+                  <th id="th-dy"></th>
+                  <th id="th-ksec"></th>
+                </tr>
+              </thead>
+              <tbody id="conv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="card panel">
+          <label for="select-fn" id="ui-fn-label" class="panel-title"></label>
+          <select id="select-fn"></select>
+          <div id="custom-params" class="custom-params hidden">
+            <div class="param-row"><span class="param-lbl" id="lbl-param-a"></span><input id="param-a" type="range" min="-1.5" max="1.5" step="0.1" value="0.5" /></div>
+            <div class="param-row"><span class="param-lbl" id="lbl-param-b"></span><input id="param-b" type="range" min="-3" max="3" step="0.2" value="0" /></div>
+            <div class="param-row"><span class="param-lbl" id="lbl-param-c"></span><input id="param-c" type="range" min="-2" max="3" step="0.2" value="0" /></div>
+          </div>
+          <div class="formula-stack">
+            <div id="fn-latex-row" class="tex-display-row"></div>
+            <div id="fp-latex-row" class="tex-display-row deriv-row"></div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h2 id="ui-layers-label" class="panel-title"></h2>
+          <div class="toggle-list">
+            <label class="toggle-item"><input id="chk-point-a" type="checkbox" checked /><span class="swatch" style="background:#0284c7"></span><span id="lbl-chk-point-a"></span></label>
+            <label class="toggle-item"><input id="chk-point-m" type="checkbox" checked /><span class="swatch" style="background:#7c3aed"></span><span id="lbl-chk-point-m"></span></label>
+            <label class="toggle-item"><input id="chk-triangle" type="checkbox" checked /><span class="swatch" style="background:#10b981"></span><span id="lbl-chk-triangle"></span></label>
+            <label class="toggle-item"><input id="chk-secant" type="checkbox" checked /><span class="swatch" style="background:#f59e0b"></span><span id="lbl-chk-secant"></span></label>
+            <label class="toggle-item"><input id="chk-fan" type="checkbox" /><span class="swatch" style="background:#94a3b8"></span><span id="lbl-chk-fan"></span></label>
+            <label class="toggle-item"><input id="chk-tangent" type="checkbox" /><span class="swatch" style="background:#e11d48"></span><span id="lbl-chk-tangent"></span></label>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h2 id="ui-readout-label" class="panel-title"></h2>
+          <div class="readout-box">
+            <div id="lbl-secant-formula" class="readout-lbl"></div>
+            <div id="val-secant-calc" class="readout-val"></div>
+          </div>
+          <div class="readout-grid">
+            <div class="readout-box"><div id="lbl-coord-a" class="readout-lbl"></div><div id="val-coord-a" class="readout-val"></div></div>
+            <div class="readout-box"><div id="lbl-coord-m" class="readout-lbl"></div><div id="val-coord-m" class="readout-val"></div></div>
+          </div>
+          <div class="readout-box" style="border-color:var(--border)">
+            <div id="lbl-limit-def" class="readout-lbl" style="font-weight:600"></div>
+            <div id="val-limit-def" class="readout-val"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      function texToHtml(str) {
+        let i = 0;
+        const n = str.length;
+        function skipSpaces() { while (i < n && str[i] === ' ') i++; }
+        function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function readBraced() {
+          i++; let depth = 1; const start = i;
+          while (i < n && depth > 0) {
+            if (str[i] === '\\' && i + 1 < n) { i += 2; continue; }
+            if (str[i] === '{') depth++; else if (str[i] === '}') depth--;
+            if (depth > 0) i++;
+          }
+          const c = str.slice(start, i); if (i < n && str[i] === '}') i++; return c;
+        }
+        function readArg() {
+          skipSpaces();
+          if (i >= n) return '';
+          if (str[i] === '{') return readBraced();
+          if (str[i] === '\\') {
+            const s = i; i++; while (i < n && /[a-zA-Z]/.test(str[i])) i++;
+            if (i === s + 1 && i < n) i++; return str.slice(s, i);
+          }
+          return str[i++];
+        }
+        function readCommand() {
+          i++; if (i >= n) return '';
+          if (!/[a-zA-Z]/.test(str[i])) return str[i++];
+          const s = i; while (i < n && /[a-zA-Z]/.test(str[i])) i++;
+          return str.slice(s, i);
+        }
+        function parseRange() {
+          let out = '', expectOperand = true;
+          while (i < n) {
+            const ch = str[i];
+            if (ch === ' ') { i++; continue; }
+            if (ch === '}') break;
+            if (ch === '{') { out += texToHtml(readBraced()); expectOperand = false; continue; }
+            if (ch === '\\') {
+              const cmd = readCommand();
+              if (cmd === 'frac') {
+                const num = readArg(), den = readArg();
+                out += `<span class="tex-frac"><span class="num">${texToHtml(num)}</span><span class="den">${texToHtml(den)}</span></span>`;
+                expectOperand = false; continue;
+              }
+              if (cmd === 'sqrt') {
+                out += `<span class="tex-sqrt"><span class="rad">√</span><span class="radicand">${texToHtml(readArg())}</span></span>`;
+                expectOperand = false; continue;
+              }
+              if (cmd === 'lim') {
+                skipSpaces();
+                if (i < n && str[i] === '_') { i++; out += `<span class="tex-lim"><span class="lim-op">lim</span><span class="lim-sub">${texToHtml(readArg())}</span></span>`; }
+                else out += '<span class="tex-op">lim</span>';
+                expectOperand = true; continue;
+              }
+              if (cmd === 'text') { out += `<span class="tex-text">${escapeHtml(readArg())}</span>`; expectOperand = false; continue; }
+              if (cmd === 'left') {
+                skipSpaces(); const od = i < n ? str[i++] : '(';
+                let depth = 1, is = i, ie = i, cd = ')';
+                while (i < n && depth > 0) {
+                  if (str.startsWith('\\left', i) && !/[a-zA-Z]/.test(str[i + 5] || '')) { depth++; i += 5; }
+                  else if (str.startsWith('\\right', i) && !/[a-zA-Z]/.test(str[i + 6] || '')) {
+                    depth--;
+                    if (depth === 0) { ie = i; i += 6; skipSpaces(); if (i < n) cd = str[i++]; break; }
+                    i += 6;
+                  } else i++;
+                }
+                const ih = texToHtml(str.slice(is, ie));
+                const dc = ih.includes('tex-frac') ? 'tex-delim tex-delim-tall' : 'tex-delim';
+                out += `<span class="tex-lr"><span class="${dc}">${od === '.' ? '' : escapeHtml(od)}</span><span>${ih}</span><span class="${dc}">${cd === '.' ? '' : escapeHtml(cd)}</span></span>`;
+                expectOperand = false; continue;
+              }
+              if (cmd === 'right') { if (i < n) i++; continue; }
+              if (cmd === 'sin' || cmd === 'cos' || cmd === 'tan') { out += `<span class="tex-op">${cmd}</span>`; expectOperand = true; continue; }
+              if (cmd === 'Delta') { out += '<span class="tex-upright">Δ</span>'; expectOperand = false; continue; }
+              if (cmd === 'alpha') { out += '<span class="tex-var">α</span>'; expectOperand = false; continue; }
+              if (cmd === 'to') { out += '<span class="tex-rel">→</span>'; expectOperand = true; continue; }
+              if (cmd === 'approx' || cmd === 'neq' || cmd === 'le' || cmd === 'ge') {
+                out += `<span class="tex-rel">${({ approx: '≈', neq: '≠', le: '≤', ge: '≥' })[cmd]}</span>`; expectOperand = true; continue;
+              }
+              if (cmd === ',') { out += '<span class="tex-thin"></span>'; continue; }
+              if (cmd === ';') { out += '<span class="tex-med"></span>'; continue; }
+              if (cmd === '!') continue;
+              out += escapeHtml(cmd); continue;
+            }
+            if (ch === '^' || ch === '_') {
+              let supH = null, subH = null;
+              while (i < n && (str[i] === '^' || str[i] === '_')) {
+                const k = str[i++], arg = readArg();
+                if (k === '^') supH = texToHtml(arg); else subH = texToHtml(arg);
+              }
+              if (supH !== null && subH !== null) out += `<span class="tex-supsub"><span>${supH}</span><span>${subH}</span></span>`;
+              else if (supH !== null) out += `<sup class="tex-sup">${supH}</sup>`;
+              else if (subH !== null) out += `<sub class="tex-sub">${subH}</sub>`;
+              expectOperand = false; continue;
+            }
+            if (ch === "'") { i++; out += '<span class="tex-prime">′</span>'; continue; }
+            if (/[a-zA-Z]/.test(ch)) { i++; out += `<span class="tex-var">${ch}</span>`; expectOperand = false; continue; }
+            if (ch === '-') { i++; out += expectOperand ? '<span class="tex-unary">−</span>' : '<span class="tex-bin">−</span>'; expectOperand = true; continue; }
+            if (ch === '+' || ch === '=' || ch === '<' || ch === '>') { i++; out += `<span class="tex-rel">${escapeHtml(ch)}</span>`; expectOperand = true; continue; }
+            if (ch === '(' || ch === '[') { i++; out += ch; expectOperand = true; continue; }
+            if (ch === ',' || ch === ';' || ch === ':') { i++; out += `${ch}<span class="tex-thin"></span>`; expectOperand = true; continue; }
+            i++; out += escapeHtml(ch); expectOperand = false;
+          }
+          return out;
+        }
+        return parseRange();
+      }
+      function tex(s, wrap = false) { return `<span class="tex${wrap ? ' tex-wrap' : ''}">${texToHtml(s)}</span>`; }
+
+      const state = {
+        lang: 'bi', notation: 'h', fnIndex: 0, x0: 1.0, h: 1.5, a: 0.5, b: 0.0, c: 0.0,
+        zoom: 1.0, dark: false, dragMode: 'M', activeStep: 2,
+        showPointA: true, showPointM: true, showTriangle: true, showSecant: true, showFan: false, showTangent: false,
+        secantFan: [], convRows: [], approaching: false, lastTs: null, dragging: false, dragTarget: 'M', dragVp: null
+      };
+
+      const FUNCTIONS = [
+        { id: 'quad', xMin: -3.0, xMax: 3.0, defaultX0: 1.0, f: (x) => 0.5 * x * x, fp: (x) => x, valid: () => true,
+          latex: () => 'f(x) = \\frac{1}{2}x^2', derivLatex: () => "f'(x) = x",
+          name: { sk: 'Parabola f(x) = 0.5x²', fr: 'Parabole f(x) = 0,5x²', bi: 'Parabola / Parabole (0.5x²)' } },
+        { id: 'cubic', xMin: -3.0, xMax: 3.0, defaultX0: 1.0, f: (x) => (x * x * x) / 6 - 0.5 * x + 1, fp: (x) => 0.5 * x * x - 0.5, valid: () => true,
+          latex: () => 'f(x) = \\frac{1}{6}x^3 - \\frac{1}{2}x + 1', derivLatex: () => "f'(x) = \\frac{1}{2}x^2 - \\frac{1}{2}",
+          name: { sk: 'Kubická funkcia (3. stupeň)', fr: 'Fonction cubique (degré 3)', bi: 'Kubická / Cubique (deg. 3)' } },
+        { id: 'sqrt', xMin: -2.2, xMax: 3.5, defaultX0: 1.0, f: (x) => Math.sqrt(x + 3), fp: (x) => 1 / (2 * Math.sqrt(x + 3)), valid: (x) => x > -2.99,
+          latex: () => 'f(x) = \\sqrt{x + 3}', derivLatex: () => "f'(x) = \\frac{1}{2\\sqrt{x + 3}}",
+          name: { sk: 'Odmocnina √(x + 3)', fr: 'Racine carrée √(x + 3)', bi: 'Odmocnina / Racine carrée √(x + 3)' } },
+        { id: 'sine', xMin: -3.5, xMax: 3.5, defaultX0: 0.0, f: (x) => 2 * Math.sin(0.5 * x) + 1, fp: (x) => Math.cos(0.5 * x), valid: () => true,
+          latex: () => 'f(x) = 2\\sin\\!\\left(\\frac{1}{2}x\\right) + 1', derivLatex: () => "f'(x) = \\cos\\!\\left(\\frac{1}{2}x\\right)",
+          name: { sk: 'Sínusoida 2 sin(0.5x) + 1', fr: 'Sinusoïde 2 sin(0,5x) + 1', bi: 'Sínusoida / Sinusoïde' } },
+        { id: 'custom', xMin: -3.0, xMax: 3.0, defaultX0: 1.0, f: (x) => state.a * x * x + state.b * x + state.c, fp: (x) => 2 * state.a * x + state.b, valid: () => true,
+          latex: () => formatPolyTex(state.a, state.b, state.c), derivLatex: () => formatDerivPolyTex(2 * state.a, state.b),
+          name: { sk: 'Vlastný polynóm ax² + bx + c', fr: 'Polynôme paramétrable ax² + bx + c', bi: 'Vlastný polynóm / Polynôme ax² + bx + c' } }
+      ];
+
+      function fmtNumClean(v) { const r = Math.round(v * 100) / 100; return String(r); }
+      function formatPolyTex(a, b, c) {
+        const p = [];
+        if (Math.abs(a) > 1e-6) p.push(`${a < 0 ? '-' : ''}${Math.abs(a) === 1 ? '' : fmtNumClean(Math.abs(a))}x^2`);
+        if (Math.abs(b) > 1e-6) {
+          const ab = Math.abs(b) === 1 ? '' : fmtNumClean(Math.abs(b));
+          p.push(p.length === 0 ? `${b < 0 ? '-' : ''}${ab}x` : `${b < 0 ? ' - ' : ' + '}${ab}x`);
+        }
+        if (Math.abs(c) > 1e-6 || p.length === 0) {
+          const ac = fmtNumClean(Math.abs(c));
+          p.push(p.length === 0 ? `${c < 0 ? '-' : ''}${ac}` : `${c < 0 ? ' - ' : ' + '}${ac}`);
+        }
+        return 'f(x) = ' + p.join('');
+      }
+      function formatDerivPolyTex(m, q) {
+        const p = [];
+        if (Math.abs(m) > 1e-6) p.push(`${m < 0 ? '-' : ''}${Math.abs(m) === 1 ? '' : fmtNumClean(Math.abs(m))}x`);
+        if (Math.abs(q) > 1e-6 || p.length === 0) {
+          const aq = fmtNumClean(Math.abs(q));
+          p.push(p.length === 0 ? `${q < 0 ? '-' : ''}${aq}` : `${q < 0 ? ' - ' : ' + '}${aq}`);
+        }
+        return "f'(x) = " + p.join('');
+      }
+
+      const I18N = {
+        sk: {
+          title: 'Definícia derivácie v bode — Sečnica a jej limita',
+          subtitle: '4.FR • Zavedenie derivácie približovaním pohyblivého bodu M k pevnému bodu A',
+          notH: `Zápis s ${tex('h')}`, notX: `Zápis s ${tex('x')}`,
+          stepsLabel: 'Etapy objavovania:',
+          steps: { 1: `1. Body ${tex('A, M')} a prírastky`, 2: `2. Sečnica ${tex('(AM)')} a podiel`, 3: `3. Približovanie ${tex('h \\to 0')}`, 4: `4. Dotyčnica a ${tex("f'(x_0)")}` },
+          dragHint: 'Ťahaním po grafe posúvate body', dragM: `Ťahať ${tex('M')}`, dragA: `Ťahať ${tex('A')}`,
+          approach: `▶ Približovať ${tex('M \\to A')} (${tex('h \\to 0')})`, approaching: '⏸ Pozastaviť približovanie',
+          clearFan: 'Vymazať vejár sečníc', recordRow: '+ Zapísať do tabuľky', fillSeries: `⚡ Skúšobný rad ${tex('h \\to 0')}`,
+          hPresets: `Rýchle nastavenie prírastku ${tex('h = \\Delta x')} (sprava aj zľava k nule):`,
+          tableTitle: `Konvergencia diferenčného podielu pri ${tex('h \\to 0')}`, clearTable: 'Vymazať tabuľku',
+          fnLabel: `Funkcia ${tex('f(x)')} (s voliteľnými parametrami)`, layersLabel: 'Súčasti v grafe (zapnúť / vypnúť)',
+          chkPointA: `Pevný bod ${tex('A(x_0, f(x_0))')} a projekcie na osi`, chkPointM: `Pohyblivý bod ${tex('M')} a projekcie na osi`,
+          chkTriangle: `Prírastky ${tex('\\Delta x')} a ${tex('\\Delta y')} (trojuholník sečnice)`, chkSecant: `Sečnica ${tex('(AM)')} a diferenčný podiel`,
+          chkFan: 'Vejár predchádzajúcich sečníc (stopa)', chkTangent: `Limitná dotyčnica ${tex('T_{x_0}')} a derivácia ${tex("f'(x_0)")}`,
+          readoutLabel: 'Diferenčný podiel a definícia derivácie', secantFormulaH: 'Smernica sečnice (diferenčný podiel):', secantFormulaX: `Smernica sečnice (${tex('x')}-ový zápis):`,
+          coordA: `Pevný bod ${tex('A')}`, coordM: `Pohyblivý bod ${tex('M')}`,
+          limitDefHidden: 'Limitný prechod (skrytý — zapnite Etapu 4 na overenie):', limitDefShown: `Definícia derivácie v bode ${tex('x_0')}:`,
+          badgeSecant: 'Sečnica existuje', badgeZero: 'h = 0 → tvar 0/0 (sečnica neexistuje!)', badgeOut: 'Bod M mimo definičného oboru'
+        },
+        fr: {
+          title: 'Définition du nombre dérivé — Sécante et limite',
+          subtitle: '4.FR • Découverte du nombre dérivé en rapprochant le point mobile M du point fixe A',
+          notH: `Notation ${tex('h')}`, notX: `Notation ${tex('x')}`,
+          stepsLabel: 'Étapes de découverte :',
+          steps: { 1: `1. Points ${tex('A, M')} et écarts`, 2: `2. Sécante ${tex('(AM)')} et taux`, 3: `3. Limite ${tex('h \\to 0')}`, 4: `4. Tangente et ${tex("f'(x_0)")}` },
+          dragHint: 'Glisser sur le graphe pour déplacer', dragM: `Déplacer ${tex('M')}`, dragA: `Déplacer ${tex('A')}`,
+          approach: `▶ Rapprocher ${tex('M \\to A')} (${tex('h \\to 0')})`, approaching: '⏸ Mettre en pause',
+          clearFan: 'Effacer le faisceau', recordRow: '+ Enregistrer dans le tableau', fillSeries: `⚡ Série test ${tex('h \\to 0')}`,
+          hPresets: `Réglage rapide du pas ${tex('h = \\Delta x')} (à droite et à gauche de 0) :`,
+          tableTitle: `Convergence du taux de variation lorsque ${tex('h \\to 0')}`, clearTable: 'Effacer le tableau',
+          fnLabel: `Fonction ${tex('f(x)')} (paramétrable)`, layersLabel: 'Composants du graphe (afficher / masquer)',
+          chkPointA: `Point fixe ${tex('A(x_0 ; f(x_0))')} et projections`, chkPointM: `Point mobile ${tex('M')} et projections`,
+          chkTriangle: `Accroissements ${tex('\\Delta x')} et ${tex('\\Delta y')} (triangle)`, chkSecant: `Droite sécante ${tex('(AM)')} et taux de variation`,
+          chkFan: 'Faisceau des sécantes précédentes (trace)', chkTangent: `Tangente limite ${tex('T_{x_0}')} et dérivé ${tex("f'(x_0)")}`,
+          readoutLabel: 'Taux de variation et définition par limite', secantFormulaH: 'Coefficient directeur de la sécante (taux de variation) :', secantFormulaX: `Coefficient directeur (notation ${tex('x')}) :`,
+          coordA: `Point fixe ${tex('A')}`, coordM: `Point mobile ${tex('M')}`,
+          limitDefHidden: "Passage à la limite (masqué — activer l'étape 4) :", limitDefShown: `Définition du nombre dérivé en ${tex('x_0')} :`,
+          badgeSecant: 'Sécante définie', badgeZero: 'h = 0 → forme 0/0 (sécante non définie !)', badgeOut: 'Point M hors du domaine'
+        },
+        bi: {
+          title: 'Definícia derivácie / Nombre dérivé (Sečnica → Dotyčnica)',
+          subtitle: '4.FR • Bilingválny objavný applet / Applet heuristique bilingue',
+          notH: `${tex('h')} zápis / notation`, notX: `${tex('x')} zápis / notation`,
+          stepsLabel: 'Etapy / Étapes :',
+          steps: { 1: `1. ${tex('A, M, \\Delta x, \\Delta y')}`, 2: `2. Sečnica / Sécante ${tex('(AM)')}`, 3: `3. Vejár / Faisceau ${tex('h \\to 0')}`, 4: '4. Dotyčnica / Tangente' },
+          dragHint: 'Ťahať na grafe / Glisser', dragM: `Bod ${tex('M')}`, dragA: `Bod ${tex('A')}`,
+          approach: `▶ Priblížiť / Rapprocher ${tex('M \\to A')}`, approaching: '⏸ Pauza / Pause',
+          clearFan: 'Vymazať vejár / Effacer faisceau', recordRow: '+ Zapísať / Enregistrer', fillSeries: `⚡ Rad / Série ${tex('h \\to 0')}`,
+          hPresets: `Kroky pre ${tex('h = \\Delta x')} (zľava a sprava k nule / à gauche et à droite de 0) :`,
+          tableTitle: `Tabuľka priblíženia / Tableau de convergence (${tex('h \\to 0')})`, clearTable: 'Vymazať / Effacer',
+          fnLabel: `Funkcia / Fonction ${tex('f(x)')}`, layersLabel: 'Prvky grafu / Composants affichés',
+          chkPointA: `Pevný bod ${tex('A')} / Point fixe ${tex('A')}`, chkPointM: `Pohyblivý bod ${tex('M')} / Point mobile ${tex('M')}`,
+          chkTriangle: `Prírastky / Accroissements ${tex('\\Delta x, \\Delta y')}`, chkSecant: `Sečnica / Sécante ${tex('(AM)')} + podiel / taux`,
+          chkFan: 'Vejár sečníc / Faisceau des sécantes', chkTangent: `Dotyčnica / Tangente ${tex('T_{x_0}')} + ${tex("f'(x_0)")}`,
+          readoutLabel: 'Výpočty a definícia / Calculs et définition', secantFormulaH: 'Diferenčný podiel / Taux de variation :', secantFormulaX: `Podiel / Taux (${tex('x')}):`,
+          coordA: `Bod ${tex('A')}`, coordM: `Bod ${tex('M')}`,
+          limitDefHidden: 'Limita (skrytá v etape 1–3) / Limite (masquée) :', limitDefShown: `Definícia derivácie / Définition en ${tex('x_0')} :`,
+          badgeSecant: 'Sečnica / Sécante OK', badgeZero: 'h = 0 → 0/0 (neurčitý výraz / indéterminé !)', badgeOut: 'Mimo oboru / Hors domaine'
+        }
+      };
+
+      const canvas = document.getElementById('scene');
+      const ctx = canvas.getContext('2d');
+      const canvasWrap = document.getElementById('canvas-wrap');
+
+      const elSelectFn = document.getElementById('select-fn');
+      const elSliderX0 = document.getElementById('slider-x0');
+      const elSliderH = document.getElementById('slider-h');
+      const elCustomParams = document.getElementById('custom-params');
+      const elParamA = document.getElementById('param-a');
+      const elParamB = document.getElementById('param-b');
+      const elParamC = document.getElementById('param-c');
+
+      const elChkA = document.getElementById('chk-point-a');
+      const elChkM = document.getElementById('chk-point-m');
+      const elChkTri = document.getElementById('chk-triangle');
+      const elChkSec = document.getElementById('chk-secant');
+      const elChkFan = document.getElementById('chk-fan');
+      const elChkTan = document.getElementById('chk-tangent');
+      const elBtnApproach = document.getElementById('btn-approach');
+      const elBtnTheme = document.getElementById('btn-theme');
+      const elStatusBadge = document.getElementById('status-badge');
+
+      function getFn() { return FUNCTIONS[state.fnIndex]; }
+      function fmt(n, d = 3) { const r = Math.abs(n) < 0.0005 ? 0 : n; return r.toFixed(d); }
+      function fmtShort(n) { const r = Math.abs(n) < 0.005 ? 0 : n; return r.toFixed(2); }
+
+      function getPalette() {
+        const light = !state.dark;
+        return {
+          light, bg: light ? '#ffffff' : '#0f172a',
+          gridMinor: light ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.12)',
+          gridMajor: light ? 'rgba(100,116,139,0.38)' : 'rgba(148,163,184,0.24)',
+          axis: light ? '#475569' : '#94a3b8', axisText: light ? '#334155' : '#cbd5e1',
+          curve: light ? '#0369a1' : '#38bdf8', pointA: light ? '#0284c7' : '#38bdf8', pointM: light ? '#7c3aed' : '#a78bfa',
+          secant: light ? '#d97706' : '#fbbf24', fan: light ? 'rgba(100,116,139,0.28)' : 'rgba(148,163,184,0.22)',
+          tangent: light ? '#e11d48' : '#fb7185', dx: light ? '#0d9488' : '#2dd4bf',
+          dyPos: light ? '#059669' : '#34d399', dyNeg: light ? '#dc2626' : '#f87171',
+          triFill: light ? 'rgba(16,185,129,0.12)' : 'rgba(52,211,153,0.14)',
+          labelBg: light ? 'rgba(255,255,255,0.92)' : 'rgba(15,23,42,0.90)',
+          labelBorder: light ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)',
+          dotStroke: light ? '#ffffff' : '#0f172a', textMain: light ? '#0f172a' : '#f1f5f9'
+        };
+      }
+
+      function getViewport(w, h) {
+        const spanX = 9.0 / state.zoom, spanY = 6.8 / state.zoom;
+        const ppu = Math.min(w / spanX, h / spanY);
+        const originX = w * 0.45, originY = h * 0.60;
+        return { w, h, ppu, originX, originY, px: (x) => originX + x * ppu, py: (y) => originY - y * ppu, wx: (px) => (px - originX) / ppu, wy: (py) => (originY - py) / ppu };
+      }
+
+      function drawRoundedBox(x, y, boxW, boxH, r) {
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, boxW, boxH, r);
+        else {
+          ctx.moveTo(x + r, y); ctx.lineTo(x + boxW - r, y); ctx.quadraticCurveTo(x + boxW, y, x + boxW, y + r);
+          ctx.lineTo(x + boxW, y + boxH - r); ctx.quadraticCurveTo(x + boxW, y + boxH, x + boxW - r, y + boxH);
+          ctx.lineTo(x + r, y + boxH); ctx.quadraticCurveTo(x, y + boxH, x, y + boxH - r);
+          ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+        }
+      }
+      function parseRuns(text) {
+        const runs = [];
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+          if (ch === '₀') runs.push({ t: '0', italic: false, sub: true });
+          else if (ch === '-') runs.push({ t: '−', italic: false, sub: false });
+          else if (/[a-zA-Z]/.test(ch)) runs.push({ t: ch, italic: true, sub: false });
+          else runs.push({ t: ch, italic: false, sub: false });
+        }
+        return runs;
+      }
+      function measureRuns(runs) {
+        let w = 0;
+        for (const r of runs) {
+          ctx.font = r.sub ? '600 9.5px "Times New Roman", Georgia, serif' : `${r.italic ? 'italic ' : ''}600 13px "Times New Roman", Georgia, serif`;
+          w += ctx.measureText(r.t).width;
+        }
+        return w;
+      }
+      function drawRuns(runs, x, cy, color) {
+        let cx = x; ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        for (const r of runs) {
+          ctx.font = r.sub ? '600 9.5px "Times New Roman", Georgia, serif' : `${r.italic ? 'italic ' : ''}600 13px "Times New Roman", Georgia, serif`;
+          ctx.fillText(r.t, cx, cy + (r.sub ? 3.5 : 0)); cx += ctx.measureText(r.t).width;
+        }
+      }
+      function drawMathPill(x, y, text, borderCol, textCol, pal) {
+        ctx.save();
+        const runs = parseRuns(text), tw = measureRuns(runs), padX = 8, boxW = tw + padX * 2, boxH = 22;
+        const rx = Math.max(4, Math.min(canvas.clientWidth - boxW - 4, x - boxW / 2));
+        const ry = Math.max(4, Math.min(canvas.clientHeight - boxH - 4, y - boxH / 2));
+        ctx.fillStyle = pal.labelBg; ctx.strokeStyle = borderCol || pal.labelBorder; ctx.lineWidth = 1.25;
+        drawRoundedBox(rx, ry, boxW, boxH, 6); ctx.fill(); ctx.stroke();
+        drawRuns(runs, rx + padX, ry + boxH / 2 + 0.5, textCol || pal.textMain);
+        ctx.restore();
+      }
+
+      function drawGrid(vp, pal) {
+        const xStart = Math.floor(vp.wx(0)) - 1, xEnd = Math.ceil(vp.wx(vp.w)) + 1;
+        const yStart = Math.floor(vp.wy(vp.h)) - 1, yEnd = Math.ceil(vp.wy(0)) + 1;
+        ctx.strokeStyle = pal.gridMinor; ctx.lineWidth = 1; ctx.beginPath();
+        for (let x = xStart; x <= xEnd; x += 0.5) { ctx.moveTo(vp.px(x), 0); ctx.lineTo(vp.px(x), vp.h); }
+        for (let y = yStart; y <= yEnd; y += 0.5) { ctx.moveTo(0, vp.py(y)); ctx.lineTo(vp.w, vp.py(y)); }
+        ctx.stroke();
+        ctx.strokeStyle = pal.gridMajor; ctx.beginPath();
+        for (let x = xStart; x <= xEnd; x += 1) { ctx.moveTo(vp.px(x), 0); ctx.lineTo(vp.px(x), vp.h); }
+        for (let y = yStart; y <= yEnd; y += 1) { ctx.moveTo(0, vp.py(y)); ctx.lineTo(vp.w, vp.py(y)); }
+        ctx.stroke();
+        const axX = vp.px(0), axY = vp.py(0);
+        ctx.strokeStyle = pal.axis; ctx.lineWidth = 1.6; ctx.beginPath();
+        ctx.moveTo(0, axY); ctx.lineTo(vp.w, axY); ctx.moveTo(axX, 0); ctx.lineTo(axX, vp.h); ctx.stroke();
+        ctx.fillStyle = pal.axis;
+        ctx.beginPath(); ctx.moveTo(vp.w - 3, axY); ctx.lineTo(vp.w - 11, axY - 4); ctx.lineTo(vp.w - 11, axY + 4); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(axX, 3); ctx.lineTo(axX - 4, 11); ctx.lineTo(axX + 4, 11); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = pal.axisText; ctx.font = '500 11.5px "Times New Roman", Georgia, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (let x = xStart; x <= xEnd; x += 1) { if (x !== 0) { const px = vp.px(x); if (px > 16 && px < vp.w - 20) ctx.fillText(String(x).replace('-', '−'), px, Math.min(vp.h - 16, Math.max(4, axY + 5))); } }
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (let y = yStart; y <= yEnd; y += 1) { if (y !== 0) { const py = vp.py(y); if (py > 14 && py < vp.h - 14) ctx.fillText(String(y).replace('-', '−'), Math.min(vp.w - 8, Math.max(24, axX - 6)), py); } }
+        ctx.fillText('0', Math.max(16, axX - 6), Math.min(vp.h - 10, Math.max(12, axY + 10)));
+        ctx.font = 'italic 700 13.5px "Times New Roman", Georgia, serif';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('x', vp.w - 8, axY - 8);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('y', axX + 8, 6);
+      }
+
+      function drawCurve(vp, fn, pal) {
+        const x0Vis = vp.wx(0) - 0.2, x1Vis = vp.wx(vp.w) + 0.2, steps = 300;
+        ctx.save(); ctx.strokeStyle = pal.curve; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+        let started = false;
+        for (let i = 0; i <= steps; i++) {
+          const x = x0Vis + ((x1Vis - x0Vis) * i) / steps;
+          if (!fn.valid(x)) { started = false; continue; }
+          const py = vp.py(fn.f(x));
+          if (!started) { ctx.moveTo(vp.px(x), py); started = true; } else ctx.lineTo(vp.px(x), py);
+        }
+        ctx.stroke(); ctx.restore();
+      }
+
+      function drawCanvasOverlayRatio(fn, pal, validM, zeroH, kSec) {
+        if (!state.showSecant && !state.showTangent) return;
+        const x0 = state.x0, fp0 = fn.fp(x0);
+        ctx.save();
+        const rx = 12, ry = 12, boxH = 40;
+        let line1Runs = [], numText = '', denText = '', resText = '', boxColor = pal.secant;
+        if (state.showTangent && zeroH) {
+          boxColor = pal.tangent;
+          line1Runs = [{ t: 'f', italic: true }, { t: '′(', italic: false }, { t: 'x', italic: true }, { t: '0', italic: false, sub: true }, { t: ') = ', italic: false }];
+          numText = 'Δy'; denText = state.notation === 'h' ? 'h' : 'x − x₀'; resText = ` = ${fmt(fp0).replace('-', '−')}`;
+        } else if (zeroH) {
+          boxColor = pal.tangent;
+          const r = [{ t: state.notation === 'h' ? 'h = 0  →  0 / 0  (!)' : 'x = x₀  →  0 / 0  (!)', italic: false }];
+          const w = measureRuns(r) + 22;
+          ctx.fillStyle = pal.labelBg; ctx.strokeStyle = boxColor; ctx.lineWidth = 1.3;
+          drawRoundedBox(rx, ry, w, 30, 7); ctx.fill(); ctx.stroke();
+          drawRuns(r, rx + 11, ry + 15, boxColor); ctx.restore(); return;
+        } else if (!validM) { ctx.restore(); return; }
+        else {
+          const dy = fn.f(x0 + state.h) - fn.f(x0);
+          line1Runs = [{ t: 'k', italic: true }, { t: 'sec', italic: false, sub: true }, { t: ' = ', italic: false }];
+          numText = fmtShort(dy).replace('-', '−'); denText = fmtShort(state.h).replace('-', '−'); resText = ` = ${fmt(kSec).replace('-', '−')}`;
+        }
+        const lw = measureRuns(line1Runs), nRuns = parseRuns(numText), dRuns = parseRuns(denText);
+        const nw = measureRuns(nRuns), dw = measureRuns(dRuns), fracW = Math.max(nw, dw) + 10;
+        const rRuns = parseRuns(resText), rw = measureRuns(rRuns), padX = 11, boxW = padX * 2 + lw + fracW + rw;
+        ctx.fillStyle = pal.labelBg; ctx.strokeStyle = boxColor; ctx.lineWidth = 1.3;
+        drawRoundedBox(rx, ry, boxW, boxH, 8); ctx.fill(); ctx.stroke();
+        const midY = ry + boxH / 2; let cx = rx + padX;
+        drawRuns(line1Runs, cx, midY, pal.textMain); cx += lw;
+        drawRuns(nRuns, cx + (fracW - nw) / 2, midY - 9, pal.textMain);
+        ctx.strokeStyle = pal.textMain; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(cx + 2, midY); ctx.lineTo(cx + fracW - 2, midY); ctx.stroke();
+        drawRuns(dRuns, cx + (fracW - dw) / 2, midY + 9, pal.textMain); cx += fracW;
+        drawRuns(rRuns, cx, midY, boxColor); ctx.restore();
+      }
+
+      function draw() {
+        const dpr = window.devicePixelRatio || 1, w = canvasWrap.clientWidth, h = canvasWrap.clientHeight;
+        if (w <= 0 || h <= 0) return;
+        if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+          canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+        }
+        ctx.save(); ctx.scale(dpr, dpr);
+        const pal = getPalette(), vp = getViewport(w, h), fn = getFn();
+        const x0 = state.x0, xM = x0 + state.h, validA = fn.valid(x0), validM = fn.valid(xM), zeroH = Math.abs(state.h) < 1e-6;
+        ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, w, h);
+        drawGrid(vp, pal); drawCurve(vp, fn, pal);
+
+        const y0 = validA ? fn.f(x0) : 0, yM = validM ? fn.f(xM) : 0;
+        const kSec = (!zeroH && validA && validM) ? (yM - y0) / state.h : NaN;
+
+        if (state.showFan && state.secantFan.length > 0) {
+          ctx.save(); ctx.strokeStyle = pal.fan; ctx.lineWidth = 1.4;
+          const xL = vp.wx(-20), xR = vp.wx(vp.w + 20);
+          for (const item of state.secantFan) {
+            ctx.beginPath(); ctx.moveTo(vp.px(xL), vp.py(item.y0 + item.k * (xL - item.x0)));
+            ctx.lineTo(vp.px(xR), vp.py(item.y0 + item.k * (xR - item.x0))); ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (state.showTangent && validA) {
+          const slope = fn.fp(x0), xL = vp.wx(-20), xR = vp.wx(vp.w + 20);
+          ctx.save(); ctx.strokeStyle = pal.tangent; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(vp.px(xL), vp.py(y0 + slope * (xL - x0))); ctx.lineTo(vp.px(xR), vp.py(y0 + slope * (xR - x0))); ctx.stroke(); ctx.restore();
+        }
+        if (state.showSecant && !zeroH && validA && validM) {
+          const xL = vp.wx(-20), xR = vp.wx(vp.w + 20);
+          ctx.save(); ctx.strokeStyle = pal.secant; ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.moveTo(vp.px(xL), vp.py(y0 + kSec * (xL - x0))); ctx.lineTo(vp.px(xR), vp.py(y0 + kSec * (xR - x0))); ctx.stroke(); ctx.restore();
+        }
+        if (state.showTriangle && !zeroH && validA && validM) {
+          const pAx = vp.px(x0), pAy = vp.py(y0), pMx = vp.px(xM), pMy = vp.py(yM), dy = yM - y0, dyCol = dy >= 0 ? pal.dyPos : pal.dyNeg;
+          ctx.save(); ctx.fillStyle = pal.triFill;
+          ctx.beginPath(); ctx.moveTo(pAx, pAy); ctx.lineTo(pMx, pAy); ctx.lineTo(pMx, pMy); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = pal.dx; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(pAx, pAy); ctx.lineTo(pMx, pAy); ctx.stroke();
+          ctx.strokeStyle = dyCol; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(pMx, pAy); ctx.lineTo(pMx, pMy); ctx.stroke();
+          if (Math.abs(pMx - pAx) > 36) drawMathPill((pAx + pMx) / 2, dy >= 0 ? pAy + 16 : pAy - 16, state.notation === 'h' ? `h = ${fmtShort(state.h)}` : `Δx = ${fmtShort(state.h)}`, pal.dx, pal.dx, pal);
+          if (Math.abs(pMy - pAy) > 20) drawMathPill(pMx + (state.h >= 0 ? 44 : -44), (pAy + pMy) / 2, `Δy = ${fmtShort(dy)}`, dyCol, dyCol, pal);
+          ctx.restore();
+        }
+        if (state.showPointA && validA) {
+          const pAx = vp.px(x0), pAy = vp.py(y0), axX = vp.px(0), axY = vp.py(0);
+          ctx.save(); ctx.strokeStyle = pal.pointA; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.moveTo(pAx, pAy); ctx.lineTo(pAx, axY); ctx.moveTo(pAx, pAy); ctx.lineTo(axX, pAy); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = pal.pointA; ctx.strokeStyle = pal.dotStroke; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(pAx, pAy, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          drawMathPill(pAx - 20, pAy - 19, 'A', pal.pointA, pal.pointA, pal);
+          drawMathPill(pAx, y0 >= 0 ? axY + 17 : axY - 17, `x₀ = ${fmtShort(x0)}`, pal.pointA, pal.pointA, pal);
+          ctx.restore();
+        }
+        if (state.showPointM && validM && !zeroH) {
+          const pMx = vp.px(xM), pMy = vp.py(yM), axX = vp.px(0), axY = vp.py(0);
+          ctx.save(); ctx.strokeStyle = pal.pointM; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.moveTo(pMx, pMy); ctx.lineTo(pMx, axY); ctx.moveTo(pMx, pMy); ctx.lineTo(axX, pMy); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = pal.pointM; ctx.strokeStyle = pal.dotStroke; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(pMx, pMy, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          drawMathPill(pMx + 20, pMy - 19, 'M', pal.pointM, pal.pointM, pal);
+          if (Math.abs(vp.px(xM) - vp.px(x0)) > 48) drawMathPill(pMx, yM >= 0 ? axY + 17 : axY - 17, state.notation === 'h' ? 'x₀ + h' : `x = ${fmtShort(xM)}`, pal.pointM, pal.pointM, pal);
+          ctx.restore();
+        }
+        drawCanvasOverlayRatio(fn, pal, validM, zeroH, kSec);
+        ctx.restore(); updateReadouts();
+      }
+
+      function updateReadouts() {
+        const fn = getFn(), t = I18N[state.lang], x0 = state.x0, h = state.h, xM = x0 + h;
+        const validA = fn.valid(x0), validM = fn.valid(xM), zeroH = Math.abs(h) < 1e-6;
+        document.getElementById('val-slider-x0').innerHTML = tex(fmtShort(x0));
+        document.getElementById('val-slider-h').innerHTML = tex(fmt(h, Math.abs(h) < 0.05 && !zeroH ? 3 : 2));
+        document.getElementById('val-coord-a').innerHTML = validA ? tex(`(${fmtShort(x0)};\\; ${fmtShort(fn.f(x0))})`) : '—';
+        document.getElementById('val-coord-m').innerHTML = validM ? tex(`(${fmt(xM, 3)};\\; ${fmt(fn.f(xM), 3)})`) : '—';
+        if (!validA || !validM) {
+          elStatusBadge.textContent = `⚠ ${t.badgeOut}`; elStatusBadge.style.backgroundColor = 'rgba(239,68,68,0.16)'; elStatusBadge.style.color = '#ef4444';
+          document.getElementById('val-secant-calc').textContent = '—';
+        } else if (zeroH) {
+          elStatusBadge.textContent = `⚠ ${t.badgeZero}`; elStatusBadge.style.backgroundColor = 'rgba(225,29,72,0.16)'; elStatusBadge.style.color = '#e11d48';
+          const y0 = fn.f(x0);
+          document.getElementById('val-secant-calc').innerHTML = tex(state.notation === 'h' ? `\\frac{f(${fmtShort(x0)} + 0) - f(${fmtShort(x0)})}{0} = \\frac{${fmtShort(y0)} - ${fmtShort(y0)}}{0} = \\frac{0}{0}` : `\\frac{f(${fmtShort(x0)}) - f(${fmtShort(x0)})}{${fmtShort(x0)} - ${fmtShort(x0)}} = \\frac{0}{0}`, true);
+        } else {
+          const dy = fn.f(xM) - fn.f(x0), kSec = dy / h;
+          elStatusBadge.innerHTML = `${t.badgeSecant} · ${tex(`k_{\\text{sec}} = ${fmt(kSec, 4)}`)}`;
+          elStatusBadge.style.backgroundColor = 'rgba(245,158,11,0.16)'; elStatusBadge.style.color = '#d97706';
+          document.getElementById('val-secant-calc').innerHTML = tex(state.notation === 'h'
+            ? `\\frac{f(${fmtShort(x0)} + ${fmt(h, 3)}) - f(${fmtShort(x0)})}{${fmt(h, 3)}} = \\frac{${fmt(dy, 4)}}{${fmt(h, 3)}} = ${fmt(kSec, 4)}`
+            : `\\frac{f(${fmt(xM, 3)}) - f(${fmtShort(x0)})}{${fmt(xM, 3)} - ${fmtShort(x0)}} = \\frac{${fmt(dy, 4)}}{${fmt(h, 3)}} = ${fmt(kSec, 4)}`, true);
+        }
+        const lblLim = document.getElementById('lbl-limit-def'), valLim = document.getElementById('val-limit-def');
+        if (state.showTangent && validA) {
+          lblLim.innerHTML = t.limitDefShown;
+          valLim.innerHTML = tex(state.notation === 'h' ? `f'(${fmtShort(x0)}) = \\lim_{h \\to 0} \\frac{f(x_0 + h) - f(x_0)}{h} = ${fmt(fn.fp(x0), 4)}` : `f'(${fmtShort(x0)}) = \\lim_{x \\to x_0} \\frac{f(x) - f(x_0)}{x - x_0} = ${fmt(fn.fp(x0), 4)}`, true);
+        } else {
+          lblLim.innerHTML = t.limitDefHidden;
+          valLim.innerHTML = tex(state.notation === 'h' ? `f'(x_0) = \\lim_{h \\to 0} \\frac{f(x_0 + h) - f(x_0)}{h} = \\text{?}` : `f'(x_0) = \\lim_{x \\to x_0} \\frac{f(x) - f(x_0)}{x - x_0} = \\text{?}`, true);
+        }
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById('conv-tbody'); tbody.innerHTML = '';
+        state.convRows.forEach((r) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${tex(fmt(r.h, 3))}</td><td>${tex(fmt(r.xM, 3))}</td><td>${tex(fmt(r.yM, 4))}</td><td>${tex(fmt(r.dy, 4))}</td><td style="font-weight:700">${tex(fmt(r.kSec, 5))}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      function addConvRow(hVal) {
+        const fn = getFn(), x0 = state.x0, xM = x0 + hVal;
+        if (Math.abs(hVal) < 1e-6 || !fn.valid(x0) || !fn.valid(xM)) return;
+        const y0 = fn.f(x0), yM = fn.f(xM), dy = yM - y0;
+        state.convRows.push({ h: hVal, xM, yM, dy, kSec: dy / hVal }); renderTable();
+      }
+
+      function syncLanguageUI() {
+        const t = I18N[state.lang];
+        document.getElementById('ui-title').textContent = t.title;
+        document.getElementById('ui-subtitle').textContent = t.subtitle;
+        document.getElementById('ui-steps-label').textContent = t.stepsLabel;
+        document.getElementById('ui-drag-hint').textContent = t.dragHint;
+        document.getElementById('lbl-h-presets').innerHTML = t.hPresets;
+        document.getElementById('ui-table-title').innerHTML = t.tableTitle;
+        document.getElementById('btn-clear-table').textContent = t.clearTable;
+        document.getElementById('btn-clear-fan').textContent = t.clearFan;
+        document.getElementById('btn-record-row').textContent = t.recordRow;
+        document.getElementById('btn-fill-series').innerHTML = t.fillSeries;
+        elBtnApproach.innerHTML = state.approaching ? t.approaching : t.approach;
+        document.getElementById('ui-fn-label').innerHTML = t.fnLabel;
+        document.getElementById('ui-layers-label').textContent = t.layersLabel;
+        document.getElementById('lbl-chk-point-a').innerHTML = t.chkPointA;
+        document.getElementById('lbl-chk-point-m').innerHTML = t.chkPointM;
+        document.getElementById('lbl-chk-triangle').innerHTML = t.chkTriangle;
+        document.getElementById('lbl-chk-secant').innerHTML = t.chkSecant;
+        document.getElementById('lbl-chk-fan').innerHTML = t.chkFan;
+        document.getElementById('lbl-chk-tangent').innerHTML = t.chkTangent;
+        document.getElementById('ui-readout-label').textContent = t.readoutLabel;
+        document.getElementById('lbl-secant-formula').innerHTML = state.notation === 'h' ? t.secantFormulaH : t.secantFormulaX;
+        document.getElementById('lbl-coord-a').innerHTML = t.coordA;
+        document.getElementById('lbl-coord-m').innerHTML = t.coordM;
+        document.getElementById('lbl-slider-x0').innerHTML = tex('x_0 =');
+        document.getElementById('lbl-slider-h').innerHTML = tex(state.notation === 'h' ? 'h =' : '\\Delta x =');
+        document.getElementById('th-h').innerHTML = tex(state.notation === 'h' ? 'h' : '\\Delta x');
+        document.getElementById('th-x').innerHTML = tex(state.notation === 'h' ? 'x_0 + h' : 'x');
+        document.getElementById('th-fx').innerHTML = tex(state.notation === 'h' ? 'f(x_0 + h)' : 'f(x)');
+        document.getElementById('th-dy').innerHTML = tex('\\Delta y');
+        document.getElementById('th-ksec').innerHTML = tex(state.notation === 'h' ? '\\frac{f(x_0+h)-f(x_0)}{h}' : '\\frac{f(x)-f(x_0)}{x-x_0}');
+        document.querySelector('.not-btn[data-not="h"]').innerHTML = t.notH;
+        document.querySelector('.not-btn[data-not="x"]').innerHTML = t.notX;
+        document.querySelectorAll('.not-btn').forEach((b) => b.classList.toggle('active', b.dataset.not === state.notation));
+        document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === state.lang));
+        document.querySelector('.drag-mode-btn[data-drag="M"]').innerHTML = t.dragM;
+        document.querySelector('.drag-mode-btn[data-drag="A"]').innerHTML = t.dragA;
+        document.querySelectorAll('.drag-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.drag === state.dragMode));
+        document.querySelectorAll('.step-btn').forEach((b) => {
+          const s = Number(b.dataset.step); b.innerHTML = t.steps[s]; b.classList.toggle('active', s === state.activeStep);
+        });
+        elSelectFn.innerHTML = '';
+        FUNCTIONS.forEach((fn, idx) => { const opt = document.createElement('option'); opt.value = String(idx); opt.textContent = fn.name[state.lang]; elSelectFn.appendChild(opt); });
+        elSelectFn.value = String(state.fnIndex);
+        syncFormulaBox();
+      }
+
+      function syncFormulaBox() {
+        const fn = getFn();
+        elCustomParams.classList.toggle('hidden', fn.id !== 'custom');
+        document.getElementById('lbl-param-a').innerHTML = tex(`a = ${state.a.toFixed(1)}`);
+        document.getElementById('lbl-param-b').innerHTML = tex(`b = ${state.b.toFixed(1)}`);
+        document.getElementById('lbl-param-c').innerHTML = tex(`c = ${state.c.toFixed(1)}`);
+        document.getElementById('fn-latex-row').innerHTML = tex(fn.latex());
+        document.getElementById('fp-latex-row').innerHTML = tex(state.showTangent ? fn.derivLatex() : "f'(x) = \\text{?}");
+      }
+
+      function syncControls() {
+        const fn = getFn();
+        elSliderX0.min = String(fn.xMin); elSliderX0.max = String(fn.xMax);
+        state.x0 = Math.max(fn.xMin, Math.min(fn.xMax, state.x0));
+        elSliderX0.value = String(state.x0);
+        elSliderH.value = String(Math.max(-2.5, Math.min(2.5, state.h)));
+        elChkA.checked = state.showPointA; elChkM.checked = state.showPointM;
+        elChkTri.checked = state.showTriangle; elChkSec.checked = state.showSecant;
+        elChkFan.checked = state.showFan; elChkTan.checked = state.showTangent;
+        elBtnApproach.innerHTML = state.approaching ? I18N[state.lang].approaching : I18N[state.lang].approach;
+      }
+
+      function recordFanLine() {
+        if (!state.showFan) return;
+        const fn = getFn();
+        if (Math.abs(state.h) < 1e-4 || !fn.valid(state.x0) || !fn.valid(state.x0 + state.h)) return;
+        const y0 = fn.f(state.x0), k = (fn.f(state.x0 + state.h) - y0) / state.h;
+        const last = state.secantFan[state.secantFan.length - 1];
+        if (!last || Math.abs(last.k - k) > 0.04 || Math.abs(last.x0 - state.x0) > 0.01) {
+          state.secantFan.push({ x0: state.x0, y0, k });
+          if (state.secantFan.length > 40) state.secantFan.shift();
+        }
+      }
+
+      function applyStep(step) {
+        state.activeStep = step; state.approaching = false;
+        if (step === 1) { state.showPointA = true; state.showPointM = true; state.showTriangle = true; state.showSecant = false; state.showFan = false; state.showTangent = false; }
+        else if (step === 2) { state.showPointA = true; state.showPointM = true; state.showTriangle = true; state.showSecant = true; state.showFan = false; state.showTangent = false; }
+        else if (step === 3) { state.showPointA = true; state.showPointM = true; state.showTriangle = true; state.showSecant = true; state.showFan = true; state.showTangent = false; }
+        else if (step === 4) { state.showPointA = true; state.showPointM = true; state.showTriangle = true; state.showSecant = true; state.showFan = true; state.showTangent = true; }
+        syncControls(); syncLanguageUI(); draw();
+      }
+
+      document.querySelectorAll('.lang-btn').forEach((b) => b.addEventListener('click', () => { state.lang = b.dataset.lang; syncLanguageUI(); draw(); }));
+      document.querySelectorAll('.not-btn').forEach((b) => b.addEventListener('click', () => { state.notation = b.dataset.not; syncLanguageUI(); draw(); }));
+      document.querySelectorAll('.drag-mode-btn').forEach((b) => b.addEventListener('click', () => { state.dragMode = b.dataset.drag; syncLanguageUI(); }));
+      document.querySelectorAll('.step-btn').forEach((b) => b.addEventListener('click', () => applyStep(Number(b.dataset.step))));
+      elSelectFn.addEventListener('change', () => {
+        state.fnIndex = Number(elSelectFn.value); state.x0 = getFn().defaultX0; state.h = 1.5; state.secantFan = []; state.convRows = []; state.approaching = false;
+        renderTable(); syncControls(); syncLanguageUI(); draw();
+      });
+      [elParamA, elParamB, elParamC].forEach((el, idx) => el.addEventListener('input', () => {
+        if (idx === 0) state.a = Number(el.value); if (idx === 1) state.b = Number(el.value); if (idx === 2) state.c = Number(el.value);
+        state.secantFan = []; syncFormulaBox(); draw();
+      }));
+      elSliderX0.addEventListener('input', () => { state.approaching = false; state.x0 = Number(elSliderX0.value); state.secantFan = []; syncControls(); draw(); });
+      elSliderH.addEventListener('input', () => { state.approaching = false; state.h = Number(elSliderH.value); recordFanLine(); syncControls(); draw(); });
+      document.querySelectorAll('.h-btn').forEach((b) => b.addEventListener('click', () => { state.approaching = false; state.h = Number(b.dataset.h); recordFanLine(); syncControls(); draw(); }));
+      [[elChkA, 'showPointA'], [elChkM, 'showPointM'], [elChkTri, 'showTriangle'], [elChkSec, 'showSecant'], [elChkFan, 'showFan'], [elChkTan, 'showTangent']].forEach(([el, k]) => el.addEventListener('change', () => {
+        state[k] = el.checked; state.activeStep = null; syncLanguageUI(); draw();
+      }));
+      elBtnApproach.addEventListener('click', () => {
+        state.approaching = !state.approaching; state.lastTs = null;
+        if (state.approaching) { if (Math.abs(state.h) < 0.03) state.h = state.h < 0 ? -2.2 : 2.2; state.showFan = true; state.showSecant = true; }
+        syncControls(); draw();
+      });
+      document.getElementById('btn-clear-fan').addEventListener('click', () => { state.secantFan = []; draw(); });
+      document.getElementById('btn-record-row').addEventListener('click', () => addConvRow(state.h));
+      document.getElementById('btn-fill-series').addEventListener('click', () => { state.convRows = []; [-1.0, -0.5, -0.1, -0.01, 0.01, 0.1, 0.5, 1.0].forEach(addConvRow); });
+      document.getElementById('btn-clear-table').addEventListener('click', () => { state.convRows = []; renderTable(); });
+      elBtnTheme.addEventListener('click', () => { state.dark = !state.dark; document.documentElement.classList.toggle('dark', state.dark); elBtnTheme.textContent = state.dark ? '☀️' : '🌙'; draw(); });
+      document.getElementById('btn-zoom-in').addEventListener('click', () => { state.zoom = Math.min(2.4, Number((state.zoom + 0.2).toFixed(2))); draw(); });
+      document.getElementById('btn-zoom-out').addEventListener('click', () => { state.zoom = Math.max(0.6, Number((state.zoom - 0.2).toFixed(2))); draw(); });
+      document.getElementById('btn-zoom-reset').addEventListener('click', () => { state.zoom = 1.0; draw(); });
+
+      canvas.addEventListener('pointerdown', (e) => {
+        state.approaching = false; state.dragging = true;
+        const rect = canvas.getBoundingClientRect(), vp = getViewport(rect.width, rect.height); state.dragVp = vp;
+        const fn = getFn(), px = e.clientX - rect.left, py = e.clientY - rect.top;
+        const dA = fn.valid(state.x0) ? Math.hypot(px - vp.px(state.x0), py - vp.py(fn.f(state.x0))) : 999;
+        const dM = fn.valid(state.x0 + state.h) ? Math.hypot(px - vp.px(state.x0 + state.h), py - vp.py(fn.f(state.x0 + state.h))) : 999;
+        if (dA < 22 && dA < dM) state.dragTarget = 'A'; else if (dM < 22) state.dragTarget = 'M'; else state.dragTarget = state.dragMode;
+        canvas.setPointerCapture(e.pointerId); handleCanvasDrag(e.clientX);
+      });
+      canvas.addEventListener('pointermove', (e) => { if (state.dragging) handleCanvasDrag(e.clientX); });
+      canvas.addEventListener('pointerup', (e) => { state.dragging = false; state.dragVp = null; if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); });
+
+      function handleCanvasDrag(clientX) {
+        const rect = canvas.getBoundingClientRect(), vp = state.dragVp || getViewport(rect.width, rect.height), fn = getFn();
+        const wx = vp.wx(clientX - rect.left);
+        if (state.dragTarget === 'A') { state.x0 = Math.max(fn.xMin, Math.min(fn.xMax, wx)); state.secantFan = []; }
+        else { state.h = Math.max(-3.0, Math.min(3.0, wx - state.x0)); recordFanLine(); }
+        syncControls(); draw();
+      }
+      function tick(ts) {
+        if (state.approaching) {
+          if (state.lastTs === null) state.lastTs = ts;
+          const dt = Math.min(0.05, (ts - state.lastTs) / 1000); state.lastTs = ts;
+          state.h *= Math.pow(0.32, dt); recordFanLine();
+          if (Math.abs(state.h) < 0.002) { state.h = state.h < 0 ? -0.001 : 0.001; state.approaching = false; }
+          syncControls(); draw();
+        }
+        requestAnimationFrame(tick);
+      }
+      if (window.ResizeObserver) new ResizeObserver(() => draw()).observe(canvasWrap);
+      window.addEventListener('resize', draw);
+      syncControls(); syncLanguageUI(); draw(); requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
